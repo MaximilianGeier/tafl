@@ -85,8 +85,10 @@ def control_figures(figure):
                 king_x = index % BOARD_WH
                 king_y = index // BOARD_WH
                 if king_x > 0 and king_y > 0 and king_x < BOARD_WH - 1 and king_y < BOARD_WH - 1:
-                    if board[(king_y - 1) * BOARD_WH + king_x] == 1 and board[(king_y + 1) * BOARD_WH + king_x] == 1 \
-                        and board[king_y * BOARD_WH + (king_x - 1)] == 1 and board[king_y * BOARD_WH + (king_x + 1)] == 1:
+                    if (board[(king_y - 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y - 1) * 2 + 1 == BOARD_WH)) \
+                        and (board[(king_y + 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y + 1) * 2 + 1 == BOARD_WH)) \
+                        and (board[king_y * BOARD_WH + (king_x - 1)] == 1 or ((king_x - 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)) \
+                        and (board[king_y * BOARD_WH + (king_x + 1)] == 1 or ((king_x + 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)):
                         return 2 #attackers win
     if figure.rank < 0:
         if figure_pos[0] > 1 and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 2)] < 0 \
@@ -112,6 +114,40 @@ def control_figures(figure):
             and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
             remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
         if figure_pos[1] < BOARD_WH - 2 and board[(figure_pos[1] + 2) * BOARD_WH + figure_pos[0]] > 0 \
+            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
+            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
+    if figure.rank < 0:
+        if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
+            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
+            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
+        if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
+            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
+            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
+        if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
+            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
+            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
+        if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
+            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
+            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
+    else:
+        if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
+            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
+            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
+        if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
+            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
+            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
+        if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
+            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
+            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
+        if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+            or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
             and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
             remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
     return 0
