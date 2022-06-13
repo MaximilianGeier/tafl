@@ -3,7 +3,7 @@ from tkinter import X
 from turtle import back, pos
 from xmlrpc.client import Boolean
 import pygame
-import random
+import pygame_menu
 
 board = [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
          0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
@@ -32,7 +32,7 @@ HEIGHT = 736
 FPS = 60
 
 pygame.init()
-pygame.mixer.init()
+#pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 background = pygame.image.load('board.jpg')
@@ -160,7 +160,7 @@ def get_square_number(pos):
     return (x, y)
 
 def move_figure(mouse_pos, figure):
-    figure_pos = (sprite.rect[0], sprite.rect[1])
+    figure_pos = (figure.rect[0], figure.rect[1])
     x, y = figure_pos[0], figure_pos[1]
     square_pos = get_square_number(mouse_pos)
     square_with_figure_pos = get_square_number(figure_pos)
@@ -192,38 +192,46 @@ def move_figure(mouse_pos, figure):
             board[square_pos[1] * BOARD_WH + square_pos[0]] = figure.rank
     return (x, y) 
 
-running = True
-selected_figure = None
-isAttackersMove = True
+def main_loop():
+    selected_figure = None
+    isAttackersMove = True
+    running = True
+    while running: #main loop
+        clock.tick(FPS) #контроль FPS
+        all_sprites.update()
+        screen.blit(background, (0, 0))
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                running = False
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                for sprite in all_sprites:
+                    if sprite.rect.collidepoint(e.pos):
+                        selected_figure = sprite
+            elif e.type == pygame.MOUSEBUTTONUP and selected_figure is not None:
+                for sprite in all_sprites:
+                    if sprite == selected_figure:
+                        if not ((sprite.rank == 1 and isAttackersMove) or (sprite.rank == -1 and not isAttackersMove) or (sprite.rank == -2 and not isAttackersMove)):
+                            break
+                        position = move_figure(e.pos, sprite)
+                        if position[0] == sprite.rect.x and position[1] == sprite.rect.y:
+                            selected_figure = None
+                            break
+                        else:
+                            sprite.rect.x = position[0]
+                            sprite.rect.y = position[1]
+                            selected_figure = None
+                            isAttackersMove = not isAttackersMove
+                            control_figures(sprite)
+                            break
+        all_sprites.draw(screen)
+        pygame.display.flip() #двойная буферезация
 
-while running: #main loop
-    clock.tick(FPS) #контроль FPS
-    all_sprites.update()
-    screen.blit(background, (0, 0))
-    for e in pygame.event.get():
-        if e.type == pygame.QUIT:
-            running = False
-        elif e.type == pygame.MOUSEBUTTONDOWN:
-            for sprite in all_sprites:
-                if sprite.rect.collidepoint(e.pos):
-                    selected_figure = sprite
-        elif e.type == pygame.MOUSEBUTTONUP and selected_figure is not None:
-            for sprite in all_sprites:
-                if sprite == selected_figure:
-                    if not ((sprite.rank == 1 and isAttackersMove) or (sprite.rank == -1 and not isAttackersMove) or (sprite.rank == -2 and not isAttackersMove)):
-                        break
-                    position = move_figure(e.pos, sprite)
-                    if position[0] == sprite.rect.x and position[1] == sprite.rect.y:
-                        selected_figure = None
-                        break
-                    else:
-                        sprite.rect.x = position[0]
-                        sprite.rect.y = position[1]
-                        selected_figure = None
-                        isAttackersMove = not isAttackersMove
-                        print(control_figures(sprite))
-                        break
-    all_sprites.draw(screen)
-    pygame.display.flip() #двойная буферезация
 
+menu = pygame_menu.Menu('Welcome', 400, 300,
+                       theme=pygame_menu.themes.THEME_BLUE)
+
+menu.add.text_input('Name :', default='Noname')
+menu.add.button('Play', main_loop)
+menu.add.button('Quit', pygame_menu.events.EXIT)
+menu.mainloop(screen)
 pygame.quit()
