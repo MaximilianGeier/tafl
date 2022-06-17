@@ -37,7 +37,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 background = pygame.image.load('board.jpg')
 
-all_sprites = pygame.sprite.Group() #структура для хранения всех спрайтов
+all_sprites = pygame.sprite.Group()
 
 class Figure(pygame.sprite.Sprite):
     rank = 1
@@ -196,10 +196,12 @@ def main_loop():
     selected_figure = None
     isAttackersMove = True
     running = True
-    while running: #main loop
+    is_mouse_pressed = False
+    while running:
         clock.tick(FPS) #контроль FPS
         all_sprites.update()
         screen.blit(background, (0, 0))
+        last_mouse_pos = pygame.mouse.get_pos()
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
@@ -207,30 +209,53 @@ def main_loop():
                 for sprite in all_sprites:
                     if sprite.rect.collidepoint(e.pos):
                         selected_figure = sprite
+                        is_mouse_pressed = True
+                        break
             elif e.type == pygame.MOUSEBUTTONUP and selected_figure is not None:
-                for sprite in all_sprites:
-                    if sprite == selected_figure:
-                        if not ((sprite.rank == 1 and isAttackersMove) or (sprite.rank == -1 and not isAttackersMove) or (sprite.rank == -2 and not isAttackersMove)):
-                            break
-                        position = move_figure(e.pos, sprite)
-                        if position[0] == sprite.rect.x and position[1] == sprite.rect.y:
-                            selected_figure = None
-                            break
-                        else:
-                            sprite.rect.x = position[0]
-                            sprite.rect.y = position[1]
-                            selected_figure = None
-                            isAttackersMove = not isAttackersMove
-                            control_figures(sprite)
-                            break
+                is_mouse_pressed = False
+                if not ((selected_figure.rank == 1 and isAttackersMove) or (selected_figure.rank == -1 and not isAttackersMove) or (selected_figure.rank == -2 and not isAttackersMove)):
+                    break
+                position = move_figure(e.pos, selected_figure)
+                if position[0] == selected_figure.rect.x and position[1] == selected_figure.rect.y:
+                    selected_figure = None
+                    break
+                else:
+                    selected_figure.rect.x = position[0]
+                    selected_figure.rect.y = position[1]
+                    result = control_figures(selected_figure)
+                    selected_figure = None
+                    isAttackersMove = not isAttackersMove
+                    if result == 1:
+                        end_message('attackers lose!')
+                        running = False
+                    elif result == 2:
+                        end_message('attackers win!')
+                        running = False
+                    break
+        # if is_mouse_pressed:
+        #     print(pygame.mouse.get_pos())
+        #     sprite= selected_figure
+        #     sprite.rect.x = sprite.rect.x + (pygame.mouse.get_pos()[0] - last_mouse_pos[0])
+        #     sprite.rect.y = sprite.rect.y + (pygame.mouse.get_pos()[1] - last_mouse_pos[1])
         all_sprites.draw(screen)
         pygame.display.flip() #двойная буферезация
 
+def end_message(message):
+    running = True
+    while running:
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                running = False
+        font = pygame.font.SysFont('Comic Sans MS', 40)
+        text_end_game = font.render(message, True, (255, 0, 0))
+        screen.blit(text_end_game, (0, HEIGHT - 50))
+        pygame.display.flip() #двойная буферезация
 
-menu = pygame_menu.Menu('Welcome', 400, 300,
+
+menu = pygame_menu.Menu('Tafl', WIDTH, HEIGHT,
                        theme=pygame_menu.themes.THEME_BLUE)
 
-menu.add.text_input('Name :', default='Noname')
+#menu.add.text_input('Name :', default='Noname')
 menu.add.button('Play', main_loop)
 menu.add.button('Quit', pygame_menu.events.EXIT)
 menu.mainloop(screen)
