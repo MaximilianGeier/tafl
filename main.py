@@ -1,11 +1,13 @@
+import pygame
+import pygame_menu
 from asyncio.windows_events import NULL
 from tkinter import X
 from turtle import back, pos
 from xmlrpc.client import Boolean
-import pygame
-import pygame_menu
 
-board = [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
+import tafl_logic
+
+start_game_board = [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
          0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1,
@@ -31,13 +33,104 @@ WIDTH = 736
 HEIGHT = 736
 FPS = 60
 
-pygame.init()
-#pygame.mixer.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
-background = pygame.image.load('board.jpg')
 
-all_sprites = pygame.sprite.Group()
+
+class Graphics:
+    def __init__(self, start_game_board):
+        pygame.init()
+        #pygame.mixer.init()
+        self.board = start_game_board.copy()
+        self.__background = pygame.image.load('board.jpg')
+        self.all_sprites = self.init_sprites()
+        self.clock = pygame.time.Clock()
+
+    def __main_loop(self, screen):
+        logic = tafl_logic.Logic(self.board, BOARD_WH, BOARD_POS, SQUARE_WH)
+        selected_figure = None
+        isAttackersMove = True
+        running = True
+        is_mouse_pressed = False
+        while running:
+            self.clock.tick(FPS) #контроль FPS
+            self.all_sprites.update()
+            screen.blit(self.__background, (0, 0))
+            last_mouse_pos = pygame.mouse.get_pos()
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    running = False
+                elif e.type == pygame.MOUSEBUTTONDOWN:
+                    for sprite in self.all_sprites:
+                        if sprite.rect.collidepoint(e.pos):
+                            selected_figure = sprite
+                            is_mouse_pressed = True
+                            break
+                elif e.type == pygame.MOUSEBUTTONUP and selected_figure is not None:
+                    is_mouse_pressed = False
+                    if not ((selected_figure.rank == 1 and isAttackersMove) or (selected_figure.rank == -1 and not isAttackersMove) or (selected_figure.rank == -2 and not isAttackersMove)):
+                        break
+                    position = logic.move_figure(e.pos, selected_figure)
+                    if position[0] == selected_figure.rect.x and position[1] == selected_figure.rect.y:
+                        selected_figure = None
+                        break
+                    else:
+                        selected_figure.rect.x = position[0]
+                        selected_figure.rect.y = position[1]
+                        result = logic.control_figures(selected_figure, self.all_sprites)
+                        selected_figure = None
+                        isAttackersMove = not isAttackersMove
+                        if result == 1:
+                            self.__end_message('attackers lose!', screen)
+                            running = False
+                        elif result == 2:
+                            self.__end_message('attackers win!', screen)
+                            running = False
+                        break
+            # if is_mouse_pressed:
+            #     print(pygame.mouse.get_pos())
+            #     sprite= selected_figure
+            #     sprite.rect.x = sprite.rect.x + (pygame.mouse.get_pos()[0] - last_mouse_pos[0])
+            #     sprite.rect.y = sprite.rect.y + (pygame.mouse.get_pos()[1] - last_mouse_pos[1])
+            self.all_sprites.draw(screen)
+            pygame.display.flip()
+
+    def __end_message(self, message, screen):
+        self.board = start_game_board.copy()
+        self.all_sprites = self.init_sprites()
+        running = True
+        while running:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    running = False
+            font = pygame.font.SysFont('Comic Sans MS', 40)
+            text_end_game = font.render(message, True, (255, 0, 0))
+            screen.blit(text_end_game, (0, HEIGHT - 50))
+            pygame.display.flip()
+    
+    def init_menu(self, screen):
+        menu = pygame_menu.Menu('Tafl', WIDTH, HEIGHT,
+                                theme=pygame_menu.themes.THEME_BLUE)
+        #menu.add.text_input('Name :', default='Noname')
+        menu.add.button('Play', self.__main_loop, (screen))
+        menu.add.button('Quit', pygame_menu.events.EXIT)
+        menu.mainloop(screen)
+        pygame.quit()
+    
+    def init_sprites(self):
+        all_sprites = pygame.sprite.Group()
+        for i in range(0, len(self.board)):
+            if self.board[i] != 0:
+                figure = Figure()
+                figure.rect.x = (i % BOARD_WH) * SQUARE_WH + BOARD_POS
+                figure.rect.y = int(i / BOARD_WH) * SQUARE_WH + BOARD_POS
+                if self.board[i] == -1:
+                    figure.image.fill(BLACK)
+                    figure.rank = -1
+                elif self.board[i] == -2:
+                    figure.image.fill(RED)
+                    figure.rank = -2
+                all_sprites.add(figure)
+        return all_sprites
+
 
 class Figure(pygame.sprite.Sprite):
     rank = 1
@@ -51,212 +144,8 @@ class Figure(pygame.sprite.Sprite):
     def update(self):
         pass
 
-for i in range(0, len(board)):
-    if board[i] != 0:
-        figure = Figure()
-        figure.rect.x = (i % BOARD_WH) * SQUARE_WH + BOARD_POS
-        figure.rect.y = int(i / BOARD_WH) * SQUARE_WH + BOARD_POS
-        if board[i] == -1:
-            figure.image.fill(BLACK)
-            figure.rank = -1
-        elif board[i] == -2:
-            figure.image.fill(RED)
-            figure.rank = -2
-        all_sprites.add(figure)
-
-def remove_figure_with_pos(pos):
-    for figure in all_sprites:
-        figure_pos = get_square_number((figure.rect.x, figure.rect.y))
-        if figure_pos[0] == pos[0] and figure_pos[1] == pos[1] and figure.rank != -2:
-            all_sprites.remove(figure)
-            board[pos[1] * BOARD_WH + pos[0]] = 0
-            return 0
-    return -1
-
-def control_figures(figure):
-    figure_pos = get_square_number((figure.rect.x, figure.rect.y))
-    if figure.rank == -2:
-        if (figure_pos[0], figure_pos[1]) == (0, 0) or (figure_pos[0], figure_pos[1]) == (BOARD_WH - 1, BOARD_WH - 1) or \
-            (figure_pos[0], figure_pos[1]) == (0, BOARD_WH - 1) or (figure_pos[0], figure_pos[1]) == (BOARD_WH - 1, 0):
-            return 1 #attackers lose
-    else:
-        for index in range(0, BOARD_POS):
-            if board[index] == -2:
-                king_x = index % BOARD_WH
-                king_y = index // BOARD_WH
-                if king_x > 0 and king_y > 0 and king_x < BOARD_WH - 1 and king_y < BOARD_WH - 1:
-                    if (board[(king_y - 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y - 1) * 2 + 1 == BOARD_WH)) \
-                        and (board[(king_y + 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y + 1) * 2 + 1 == BOARD_WH)) \
-                        and (board[king_y * BOARD_WH + (king_x - 1)] == 1 or ((king_x - 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)) \
-                        and (board[king_y * BOARD_WH + (king_x + 1)] == 1 or ((king_x + 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)):
-                        return 2 #attackers win
-    if figure.rank < 0:
-        if figure_pos[0] > 1 and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 2)] < 0 \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
-            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
-        if figure_pos[1] > 1 and board[(figure_pos[1] - 2) * BOARD_WH + figure_pos[0]] < 0 \
-            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
-        if figure_pos[0] < BOARD_WH - 2 and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 2)] < 0 \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
-            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
-        if figure_pos[1] < BOARD_WH - 2 and board[(figure_pos[1] + 2) * BOARD_WH + figure_pos[0]] < 0 \
-            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
-    else:
-        if figure_pos[0] > 1 and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 2)] > 0 \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
-            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
-        if figure_pos[1] > 1 and board[(figure_pos[1] - 2) * BOARD_WH + figure_pos[0]] > 0 \
-            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
-        if figure_pos[0] < BOARD_WH - 2 and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 2)] > 0 \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
-            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
-        if figure_pos[1] < BOARD_WH - 2 and board[(figure_pos[1] + 2) * BOARD_WH + figure_pos[0]] > 0 \
-            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
-    if figure.rank < 0:
-        if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
-            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
-        if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
-            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
-        if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
-            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
-        if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
-            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
-    else:
-        if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
-            remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]))
-        if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
-            and board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1))
-        if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
-            and board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
-            remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
-        if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-            or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
-            and board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
-            remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1))
-    return 0
-
-def get_square_number(pos):
-    x = int((pos[0] - BOARD_POS) / SQUARE_WH)
-    y = int((pos[1] - BOARD_POS) / SQUARE_WH)
-    if pos[0] < 58 or pos[1] < BOARD_POS or x >= BOARD_WH or y >= BOARD_WH:
-        return (None, None)
-    return (x, y)
-
-def move_figure(mouse_pos, figure):
-    figure_pos = (figure.rect[0], figure.rect[1])
-    x, y = figure_pos[0], figure_pos[1]
-    square_pos = get_square_number(mouse_pos)
-    square_with_figure_pos = get_square_number(figure_pos)
-    if square_pos == None or square_with_figure_pos == None:
-        return (x, y)
-    elif (square_pos[0] == 0 and square_pos[1] == 0) or (square_pos[0] == BOARD_WH - 1 and square_pos[1] == BOARD_WH - 1) \
-    or (square_pos[0] == 0 and square_pos[1] == BOARD_WH - 1) or (square_pos[0] == BOARD_WH - 1 and square_pos[1] == 0):
-        if figure.rank != -2:
-            return (x, y)
-    elif square_pos[0] == BOARD_WH // 2 and square_pos[1] == BOARD_WH // 2:
-        return (x, y)
-    if square_pos[0] == square_with_figure_pos[0] or square_pos[1] == square_with_figure_pos[1]:
-        flag = True
-        direction = 1
-        if square_pos[0] > square_with_figure_pos[0]:
-            direction = -1
-        for i in range(square_pos[0], square_with_figure_pos[0], direction):
-            if board[square_with_figure_pos[1] * BOARD_WH + i] != 0:
-                flag = False
-        if square_pos[1] > square_with_figure_pos[1]:
-            direction = -1
-        for i in range(square_pos[1], square_with_figure_pos[1], direction):
-            if board[i * BOARD_WH + square_with_figure_pos[0]] != 0:
-                flag = False
-        if flag:
-            x = BOARD_POS + (SQUARE_WH * square_pos[0])
-            y = BOARD_POS + (SQUARE_WH * square_pos[1])
-            board[square_with_figure_pos[1] * BOARD_WH + square_with_figure_pos[0]] = 0
-            board[square_pos[1] * BOARD_WH + square_pos[0]] = figure.rank
-    return (x, y) 
-
-def main_loop():
-    selected_figure = None
-    isAttackersMove = True
-    running = True
-    is_mouse_pressed = False
-    while running:
-        clock.tick(FPS) #контроль FPS
-        all_sprites.update()
-        screen.blit(background, (0, 0))
-        last_mouse_pos = pygame.mouse.get_pos()
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT:
-                running = False
-            elif e.type == pygame.MOUSEBUTTONDOWN:
-                for sprite in all_sprites:
-                    if sprite.rect.collidepoint(e.pos):
-                        selected_figure = sprite
-                        is_mouse_pressed = True
-                        break
-            elif e.type == pygame.MOUSEBUTTONUP and selected_figure is not None:
-                is_mouse_pressed = False
-                if not ((selected_figure.rank == 1 and isAttackersMove) or (selected_figure.rank == -1 and not isAttackersMove) or (selected_figure.rank == -2 and not isAttackersMove)):
-                    break
-                position = move_figure(e.pos, selected_figure)
-                if position[0] == selected_figure.rect.x and position[1] == selected_figure.rect.y:
-                    selected_figure = None
-                    break
-                else:
-                    selected_figure.rect.x = position[0]
-                    selected_figure.rect.y = position[1]
-                    result = control_figures(selected_figure)
-                    selected_figure = None
-                    isAttackersMove = not isAttackersMove
-                    if result == 1:
-                        end_message('attackers lose!')
-                        running = False
-                    elif result == 2:
-                        end_message('attackers win!')
-                        running = False
-                    break
-        # if is_mouse_pressed:
-        #     print(pygame.mouse.get_pos())
-        #     sprite= selected_figure
-        #     sprite.rect.x = sprite.rect.x + (pygame.mouse.get_pos()[0] - last_mouse_pos[0])
-        #     sprite.rect.y = sprite.rect.y + (pygame.mouse.get_pos()[1] - last_mouse_pos[1])
-        all_sprites.draw(screen)
-        pygame.display.flip() #двойная буферезация
-
-def end_message(message):
-    running = True
-    while running:
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT:
-                running = False
-        font = pygame.font.SysFont('Comic Sans MS', 40)
-        text_end_game = font.render(message, True, (255, 0, 0))
-        screen.blit(text_end_game, (0, HEIGHT - 50))
-        pygame.display.flip() #двойная буферезация
 
 
-menu = pygame_menu.Menu('Tafl', WIDTH, HEIGHT,
-                       theme=pygame_menu.themes.THEME_BLUE)
-
-#menu.add.text_input('Name :', default='Noname')
-menu.add.button('Play', main_loop)
-menu.add.button('Quit', pygame_menu.events.EXIT)
-menu.mainloop(screen)
-pygame.quit()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+graphics = Graphics(start_game_board)
+graphics.init_menu(screen)
