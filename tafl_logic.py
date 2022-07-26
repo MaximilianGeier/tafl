@@ -2,6 +2,7 @@ BOARD_WH = 0
 BOARD_POS = 0
 SQUARE_WH = 0
 
+
 class Logic:
     def __init__(self, board, board_wh, board_pos, square_wh):
         self.board = board
@@ -27,79 +28,97 @@ class Logic:
     def control_figures(self, figure, all_sprites):
         figure_pos = self.get_square_number((figure.rect.x, figure.rect.y))
         if figure.rank == -2:
-            if (figure_pos[0], figure_pos[1]) == (0, 0) or (figure_pos[0], figure_pos[1]) == (BOARD_WH - 1, BOARD_WH - 1) or \
-                (figure_pos[0], figure_pos[1]) == (0, BOARD_WH - 1) or (figure_pos[0], figure_pos[1]) == (BOARD_WH - 1, 0):
-                return 1 #attackers lose
+            if (figure_pos[0], figure_pos[1]) == (0, 0) or (figure_pos[0], figure_pos[1]) == (
+                    BOARD_WH - 1, BOARD_WH - 1) or \
+                    (figure_pos[0], figure_pos[1]) == (0, BOARD_WH - 1) or (figure_pos[0], figure_pos[1]) == (
+                    BOARD_WH - 1, 0):
+                return 1  # attackers lose
         else:
             for index in range(0, BOARD_POS):
                 if self.board[index] == -2:
                     king_x = index % BOARD_WH
                     king_y = index // BOARD_WH
                     if king_x > 0 and king_y > 0 and king_x < BOARD_WH - 1 and king_y < BOARD_WH - 1:
-                        if (self.board[(king_y - 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y - 1) * 2 + 1 == BOARD_WH)) \
-                            and (self.board[(king_y + 1) * BOARD_WH + king_x] == 1 or (king_x * 2 + 1 == BOARD_WH and (king_y + 1) * 2 + 1 == BOARD_WH)) \
-                            and (self.board[king_y * BOARD_WH + (king_x - 1)] == 1 or ((king_x - 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)) \
-                            and (self.board[king_y * BOARD_WH + (king_x + 1)] == 1 or ((king_x + 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)):
-                            return 2 #attackers win
+                        if (self.board[(king_y - 1) * BOARD_WH + king_x] == 1 or (
+                                king_x * 2 + 1 == BOARD_WH and (king_y - 1) * 2 + 1 == BOARD_WH)) \
+                                and (self.board[(king_y + 1) * BOARD_WH + king_x] == 1 or (
+                                king_x * 2 + 1 == BOARD_WH and (king_y + 1) * 2 + 1 == BOARD_WH)) \
+                                and (self.board[king_y * BOARD_WH + (king_x - 1)] == 1 or (
+                                (king_x - 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)) \
+                                and (self.board[king_y * BOARD_WH + (king_x + 1)] == 1 or (
+                                (king_x + 1) * 2 + 1 == BOARD_WH and king_y * 2 + 1 == BOARD_WH)):
+                            return 2  # attackers win
         if figure.rank < 0:
             if figure_pos[0] > 1 and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 2)] < 0 \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
                 self.remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]), all_sprites)
             if figure_pos[1] > 1 and self.board[(figure_pos[1] - 2) * BOARD_WH + figure_pos[0]] < 0 \
-                and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
+                    and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1), all_sprites)
             if figure_pos[0] < BOARD_WH - 2 and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 2)] < 0 \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
                 self.remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]))
             if figure_pos[1] < BOARD_WH - 2 and self.board[(figure_pos[1] + 2) * BOARD_WH + figure_pos[0]] < 0 \
-                and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
+                    and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1), all_sprites)
         else:
             if figure_pos[0] > 1 and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 2)] > 0 \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
                 self.remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]), all_sprites)
             if figure_pos[1] > 1 and self.board[(figure_pos[1] - 2) * BOARD_WH + figure_pos[0]] > 0 \
-                and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
+                    and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1), all_sprites)
             if figure_pos[0] < BOARD_WH - 2 and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 2)] > 0 \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
                 self.remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]), all_sprites)
             if figure_pos[1] < BOARD_WH - 2 and self.board[(figure_pos[1] + 2) * BOARD_WH + figure_pos[0]] > 0 \
-                and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
+                    and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1), all_sprites)
         if figure.rank < 0:
             if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
+                                      or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (
+                                              figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] > 0:
                 self.remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]), all_sprites)
             if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
-                and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
+                                      or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (
+                                              figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
+                    and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] > 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1), all_sprites)
-            if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
+            if figure_pos[0] < BOARD_WH - 2 and (
+                    (figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
+                    or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (
+                            figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] > 0:
                 self.remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]), all_sprites)
-            if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
-                and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
+            if figure_pos[1] < BOARD_WH - 2 and (
+                    ((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+                    or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (
+                            figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
+                    and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] > 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1), all_sprites)
         else:
             if figure_pos[0] > 1 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] - 2) * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
+                                      or (figure_pos[0] - 2 == 0 and figure_pos[1] == 0) or (
+                                              figure_pos[0] - 2 == 0 and figure_pos[1] == BOARD_WH - 1)) \
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] - 1)] < 0:
                 self.remove_figure_with_pos((figure_pos[0] - 1, figure_pos[1]), all_sprites)
             if figure_pos[1] > 1 and (((figure_pos[1] - 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
-                and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
+                                      or (figure_pos[0] == 0 and figure_pos[1] - 2 == 0) or (
+                                              figure_pos[0] == BOARD_WH - 1 and figure_pos[1] - 2 == 0)) \
+                    and self.board[(figure_pos[1] - 1) * BOARD_WH + figure_pos[0]] < 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] - 1), all_sprites)
-            if figure_pos[0] < BOARD_WH - 2 and ((figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
-                and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
+            if figure_pos[0] < BOARD_WH - 2 and (
+                    (figure_pos[1] * 2 + 1) == BOARD_WH and ((figure_pos[0] + 2) * 2 + 1) == BOARD_WH \
+                    or (figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == 0) or (
+                            figure_pos[0] + 2 == BOARD_WH - 1 and figure_pos[1] == BOARD_WH - 1)) \
+                    and self.board[figure_pos[1] * BOARD_WH + (figure_pos[0] + 1)] < 0:
                 self.remove_figure_with_pos((figure_pos[0] + 1, figure_pos[1]), all_sprites)
-            if figure_pos[1] < BOARD_WH - 2 and (((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
-                or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
-                and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
+            if figure_pos[1] < BOARD_WH - 2 and (
+                    ((figure_pos[1] + 2) * 2 + 1) == BOARD_WH and (figure_pos[0] * 2 + 1) == BOARD_WH \
+                    or (figure_pos[0] == 0 and figure_pos[1] + 2 == BOARD_WH - 1) or (
+                            figure_pos[0] == BOARD_WH - 1 and figure_pos[1] + 2 == BOARD_WH - 1)) \
+                    and self.board[(figure_pos[1] + 1) * BOARD_WH + figure_pos[0]] < 0:
                 self.remove_figure_with_pos((figure_pos[0], figure_pos[1] + 1), all_sprites)
         return 0
 
@@ -108,14 +127,16 @@ class Logic:
         x, y = figure_pos[0], figure_pos[1]
         square_pos = self.get_square_number(mouse_pos)
         square_with_figure_pos = self.get_square_number(figure_pos)
-        if square_pos == None or square_with_figure_pos == None:
-            return (x, y)
-        elif (square_pos[0] == 0 and square_pos[1] == 0) or (square_pos[0] == BOARD_WH - 1 and square_pos[1] == BOARD_WH - 1) \
-        or (square_pos[0] == 0 and square_pos[1] == BOARD_WH - 1) or (square_pos[0] == BOARD_WH - 1 and square_pos[1] == 0):
+        if square_pos is None or square_with_figure_pos is None:
+            return x, y
+        elif (square_pos[0] == 0 and square_pos[1] == 0) or (
+                square_pos[0] == BOARD_WH - 1 and square_pos[1] == BOARD_WH - 1) \
+                or (square_pos[0] == 0 and square_pos[1] == BOARD_WH - 1) or (
+                square_pos[0] == BOARD_WH - 1 and square_pos[1] == 0):
             if figure.rank != -2:
-                return (x, y)
+                return x, y
         elif square_pos[0] == BOARD_WH // 2 and square_pos[1] == BOARD_WH // 2:
-            return (x, y)
+            return x, y
         if square_pos[0] == square_with_figure_pos[0] or square_pos[1] == square_with_figure_pos[1]:
             flag = True
             direction = 1
@@ -139,6 +160,6 @@ class Logic:
     def get_square_number(self, pos):
         x = int((pos[0] - BOARD_POS) / SQUARE_WH)
         y = int((pos[1] - BOARD_POS) / SQUARE_WH)
-        if pos[0] < 58 or pos[1] < BOARD_POS or x >= BOARD_WH or y >= BOARD_WH:
-            return (None, None)
-        return (x, y)
+        # if pos[0] < 58 or pos[1] < BOARD_POS or x >= BOARD_WH or y >= BOARD_WH:
+        #     return None, None
+        return x, y
